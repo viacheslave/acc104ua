@@ -24,7 +24,14 @@ Export last month:
 acc104ua.exe --export <username> <password>
 ```
 
+Show current statement:
+```
+acc104ua.exe <username> <password>
+```
+
+
 NOTES:
+- 2FA not supported
 - export is performed into `bin` folder
 - dates are inclusive
 - dates format preferably is `yyyy-MM-dd`, but parsing depends on your local settings
@@ -34,4 +41,4 @@ NOTES:
 
 1. Raw data. TXT files of what APIs give back.
 2. JSON. JSON files of cleaned-up data.
-3. CSVs. Data grouped by account ID and utility type.
+3. CSVs. Data grouped by account ID.

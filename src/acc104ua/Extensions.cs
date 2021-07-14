@@ -5,17 +5,30 @@ namespace acc104ua
 	internal static class Extensions
 	{
 		/// <summary>
-		///		Strips money-formatted value into pure value
+		///		Converts raw strings into double values
 		/// </summary>
 		/// <param name="str">Input str</param>
 		/// <returns>Double-precision value</returns>
-		public static double ParseMoney(this string str)
+		public static double Parse(this string str)
 		{
-			var sanitized = new Regex("грн|\\n|\b")
+			var sanitized = Strip(str);
+
+			return double.Parse(sanitized);
+		}
+
+		/// <summary>
+		///		Sanitizes raw strings
+		/// </summary>
+		/// <param name="str">Input str</param>
+		/// <returns>Sanitized str</returns>
+		public static string Strip(this string str)
+		{
+			str = new Regex("грн|\\n|\b|м³|/")
 				.Replace(str, "")
 				.Trim();
 
-			return double.Parse(sanitized);
+			return new Regex("\\s\\s+")
+				.Replace(str, " ");
 		}
 	}
 }

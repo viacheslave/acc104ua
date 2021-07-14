@@ -8,6 +8,7 @@ namespace acc104ua
 		string AccountId,
 		IReadOnlyCollection<string> GasLines,
 		IReadOnlyCollection<string> DeliveryLines,
-		MonthlyConsumptionDto Consumption
+		MonthlyConsumptionDto Consumption,
+		FrontPageDto FrontData
 	);
 }

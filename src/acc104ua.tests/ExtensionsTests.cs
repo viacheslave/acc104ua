@@ -10,9 +10,11 @@ namespace acc104ua
 		[InlineData(" 41.45 ", 41.45)]
 		[InlineData(" 41.45 грн ", 41.45)]
 		[InlineData(" 41.45 \n грн ", 41.45)]
+		[InlineData(" 41.45 \n грн   ", 41.45)]
+		[InlineData(" 41.45 \n грн/м³", 41.45)]
 		public void Should_ParseMoney_Strip(string input, double output)
 		{
-			Assert.Equal(output, input.ParseMoney());
+			Assert.Equal(output, input.Parse());
 		}
 	}
 }

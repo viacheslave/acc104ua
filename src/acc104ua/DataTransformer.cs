@@ -63,13 +63,13 @@ namespace acc104ua
 							.ToList();
 
 						var month = DateTime.Parse(children[0].InnerText, _cultureInfo);
-						var balancePeriodStart = children[1].InnerText.ParseMoney();
-						var paid = children[2].InnerText.ParseMoney();
-						var subs = children[3].InnerText.ParseMoney();
-						var credited = children[4].InnerText.ParseMoney();
-						var recalculated = children[5].InnerText.ParseMoney();
-						var penalty = children[6].InnerText.ParseMoney();
-						var balancePeriodEnd = children[7].InnerText.ParseMoney();
+						var balancePeriodStart = children[1].InnerText.Parse();
+						var paid = children[2].InnerText.Parse();
+						var subs = children[3].InnerText.Parse();
+						var credited = children[4].InnerText.Parse();
+						var recalculated = children[5].InnerText.Parse();
+						var penalty = children[6].InnerText.Parse();
+						var balancePeriodEnd = children[7].InnerText.Parse();
 
 						var monthlyLine = new MonthlyLine
 							(month, balancePeriodStart, paid, subs, credited, recalculated, penalty, balancePeriodEnd);

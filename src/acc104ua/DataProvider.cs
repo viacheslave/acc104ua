@@ -28,8 +28,10 @@ namespace acc104ua
 				var gasLines = await GetUtilityLines(Utility.Gas, account, dates);
 				var deliveryLines = await GetUtilityLines(Utility.Delivery, account, dates);
 				var consumption = await GetConsumption(account);
+				var frontData = await GetFrontData(account);
 
-				data.Add(new AccountDataRawDto(account.Id, gasLines, deliveryLines, consumption));
+				data.Add(
+					new AccountDataRawDto(account.Id, gasLines, deliveryLines, consumption, frontData));
 			}
 
 			return data;
@@ -134,6 +136,66 @@ namespace acc104ua
 				.ReceiveJson<MonthlyConsumptionDto>();
 
 			return data;
+		}
+
+		private async Task<FrontPageDto> GetFrontData(AccountInfo account)
+		{
+			var content = await new Url("https://ok.104.ua/ua/")
+				.WithCookie(AuthCookie.Key, _authCookies.Value)
+				.GetStringAsync();
+
+			var doc = new HtmlAgilityPack.HtmlDocument();
+			doc.LoadHtml(content);
+
+			var el = doc.DocumentNode.Descendants("div")
+				.Where(el => el.HasClass("readings-widget__info-price"))
+				.ToList();
+
+			var balanceGas = el[0].InnerText.Parse();
+			var balanceDelivery = el[1].InnerText.Parse();
+
+			el = doc.DocumentNode.Descendants("div")
+				.Where(el => el.HasClass("chart-widget__volume"))
+				.ToList();
+
+			var consumption = el[0].InnerText.Parse();
+
+			el = doc.DocumentNode.Descendants("div")
+				.Where(el => el.HasClass("chart-widget__period"))
+				.ToList();
+
+			var consumptionPeriod = el[0].InnerText.Strip();
+
+			var elnums = doc.DocumentNode.Descendants("div")
+				.Where(el => el.HasClass("service-widget__info-num"))
+				.ToList();
+
+			var eltitles = doc.DocumentNode.Descendants("div")
+				.Where(el => el.HasClass("service-widget__info-title"))
+				.ToList();
+
+			var gasPrice = elnums[0].InnerText.Parse();
+			var gasPriceDescription = eltitles[0].InnerText.Strip();
+
+			var deliveryBill = elnums[1].InnerText.Parse();
+			var deliveryBillDescription = eltitles[1].InnerText.Strip();
+
+			var deliveryMonthlyPower = elnums[2].InnerText.Parse();
+			var deliveryMonthlyPowerDescription = eltitles[2].InnerText.Strip();
+
+			return new FrontPageDto
+			(
+				BalanceGas: balanceGas,
+				BalanceDelivery: balanceDelivery,
+				Consumption: consumption,
+				ConsumptionPeriod: consumptionPeriod,
+				GasPrice: gasPrice,
+				GasPriceDescription: gasPriceDescription,
+				DeliveryBill: deliveryBill,
+				DeliveryBillDescription: deliveryBillDescription,
+				DeliveryMonthlyPower: deliveryMonthlyPower,
+				DeliveryMonthlyPowerDescription: deliveryMonthlyPowerDescription 
+			);
 		}
 	}
 }

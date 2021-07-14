@@ -24,6 +24,7 @@ namespace acc104ua
 					await ExportData(args.Skip(1).ToArray());
 					break;
 				default:
+					await ShowFrontPage(args);
 					break;
 			}
 		}
@@ -48,6 +49,18 @@ namespace acc104ua
 			exporter.SaveConsumptionAsCsv(accounts);
 
 			Logger.Out($"Export folder: {exporter.ExportFolder.FullName}");
+		}
+
+		private static async Task ShowFrontPage(string[] args)
+		{
+			var options = GetOptions(args);
+
+			// get raw data
+			var rawData = await GetRawData(options);
+
+			var output = ConsoleFormatter.GetOutput(rawData);
+
+			Console.WriteLine(output);
 		}
 
 		private static Options GetOptions(string[] args)
