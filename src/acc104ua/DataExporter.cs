@@ -14,7 +14,7 @@ namespace acc104ua
 {
 	internal sealed class DataExporter
 	{
-		private DirectoryInfo _exportFolder;
+		public DirectoryInfo ExportFolder { get; private set; }
 
 		private readonly JsonSerializerOptions _serializerOptions = new()
 		{
@@ -41,62 +41,68 @@ namespace acc104ua
 			foreach (var account in accounts)
 			{
 				var fileName = Path.Combine(
-					_exportFolder.FullName, 
+					ExportFolder.FullName, 
 					$"raw-acc{account.AccountId}-{fnSuffix}.txt");
 
-				await File.WriteAllTextAsync(fileName, string.Concat(account.Lines));
+				var data = utility switch
+				{
+					Utility.Delivery => account.DeliveryLines,
+					Utility.Gas => account.GasLines
+				};
+
+				await File.WriteAllTextAsync(fileName, string.Concat(data));
 
 				Logger.Out($"Raw: {fileName}");
 			}
-
-			Logger.Out($"Raw export folder: {_exportFolder.FullName}");
 		}
 
 		/// <summary>
 		///		Exports raw data as JSON
 		/// </summary>
-		/// <param name="utility">Gas or Delivery</param>
 		/// <param name="accounts">Accounts data</param>
-		public async Task SaveAsJson(Utility utility, IReadOnlyCollection<AccountData> accounts)
+		public async Task SaveAsJson(IReadOnlyCollection<AccountData> accounts)
 		{
-			var fnSuffix = GetFilenameSuffix(utility);
-
 			Logger.Out($"Exporting JSON data...");
 
 			foreach (var account in accounts)
 			{
-				var fileName = Path.Combine(
-					_exportFolder.FullName,
-					$"acc{account.AccountId}-{fnSuffix}.json");
-
+				var fileName = Path.Combine(ExportFolder.FullName, $"acc{account.AccountId}.json");
 				var json = JsonSerializer.Serialize(account, _serializerOptions);
 
 				await File.WriteAllTextAsync(fileName, json);
 
 				Logger.Out($"JSON: {fileName}");
 			}
-
-			Logger.Out($"JSON export folder: {_exportFolder.FullName}");
 		}
 
 		/// <summary>
-		///		Exports raw data as CSV
+		///		Exports data as CSV
 		/// </summary>
-		/// <param name="utility">Gas or Delivery</param>
 		/// <param name="accounts">Accounts data</param>
-		public void SaveAsCsv(Utility utility, IReadOnlyCollection<AccountData> accounts)
+		public void SaveAsCsv(IReadOnlyCollection<AccountData> accounts)
 		{
-			var fnSuffix = GetFilenameSuffix(utility);
-
 			var csvConfiguration = new CsvConfiguration(CultureInfo.GetCultureInfo("uk-UA"));
 
 			Logger.Out($"Exporting CSV data...");
 
 			foreach (var account in accounts)
 			{
-				var accountId = account.AccountId;
+				var fnSuffix = GetFilenameSuffix(Utility.Gas);
+				var fileName = Path.Combine(ExportFolder.FullName, $"acc{account.AccountId}-{fnSuffix}.csv");
+				ExportLines(account, account.GasLines, fileName);
 
-				var exported = account.Lines
+				fnSuffix = GetFilenameSuffix(Utility.Delivery);
+				fileName = Path.Combine(ExportFolder.FullName, $"acc{account.AccountId}-{fnSuffix}.csv");
+				ExportLines(account, account.DeliveryLines, fileName);
+
+				Logger.Out($"CSV: {fileName}");
+			}
+
+			void ExportLines(AccountData acc, IReadOnlyCollection<MonthlyLine> lines, string fileName)
+			{
+				var accountId = acc.AccountId;
+
+				var linesDtos = lines
 					.Select(model => new MonthlyLineExportDto
 					{
 						AccountId = accountId,
@@ -111,18 +117,51 @@ namespace acc104ua
 					})
 					.ToList();
 
-				var fileName = Path.Combine(
-					_exportFolder.FullName,
-					$"acc{accountId}-{fnSuffix}.csv");
-
 				using var tw = new StreamWriter(fileName);
 				using var csv = new CsvWriter(tw, csvConfiguration);
 
 				csv.Context.RegisterClassMap<MonthlyLineExportDtoMap>();
-				csv.WriteRecords(exported);
+				csv.WriteRecords(linesDtos);
+			}
+		}
+
+		/// <summary>
+		///		Export consumption data as CSV
+		/// </summary>
+		/// <param name="accounts">Accounts data</param>
+		public void SaveConsumptionAsCsv(IReadOnlyCollection<AccountData> accounts)
+		{
+			var csvConfiguration = new CsvConfiguration(CultureInfo.GetCultureInfo("uk-UA"));
+
+			Logger.Out($"Exporting CSV consumption data...");
+
+			foreach (var account in accounts)
+			{
+				var fileName = Path.Combine(ExportFolder.FullName, $"acc{account.AccountId}-consumption.csv");
+				ExportConsumption(account, fileName);
+
+				Logger.Out($"CSV: {fileName}");
 			}
 
-			Logger.Out($"CSV export folder: {_exportFolder.FullName}");
+			void ExportConsumption(AccountData acc, string fileName)
+			{
+				var accountId = acc.AccountId;
+
+				var linesDtos = acc.Consumption
+					.Select(model => new MonthlyConsumptionExportDto
+					{
+						Period = DateTime.Parse(model.Period),
+						Power = model.Power,
+						Volume = model.Volume
+					})
+					.ToList();
+
+				using var tw = new StreamWriter(fileName);
+				using var csv = new CsvWriter(tw, csvConfiguration);
+
+				csv.Context.RegisterClassMap<MonthlyConsumptionExportDtoMap>();
+				csv.WriteRecords(linesDtos);
+			}
 		}
 
 		private static string GetFilenameSuffix(Utility utility)
@@ -139,10 +178,10 @@ namespace acc104ua
 		{
 			var folder = $"export-{DateTime.Now:yyyyMMdd-HHmm}";
 
-			_exportFolder = new DirectoryInfo(folder);
+			ExportFolder = new DirectoryInfo(folder);
 
 			if (!Directory.Exists(folder))
-				_exportFolder = Directory.CreateDirectory(folder);
+				ExportFolder = Directory.CreateDirectory(folder);
 		}
 	}
 }

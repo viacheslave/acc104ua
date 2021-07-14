@@ -32,27 +32,22 @@ namespace acc104ua
 		{
 			var options = GetOptions(args);
 
-			await ExportData(options, Utility.Gas);
-			await ExportData(options, Utility.Delivery);
-		}
-
-		private static async Task ExportData(Options options, Utility utility)
-		{
 			// get raw data
-			var rawData = await GetRawData(options, utility);
-
+			var rawData = await GetRawData(options);
 			var accounts = new DataTransformer().BuildAccounts(rawData);
 
 			var exporter = new DataExporter();
 
-			// export raw data
-			await exporter.SaveRaw(utility, rawData);
+			await exporter.SaveRaw(Utility.Gas, rawData);
+			await exporter.SaveRaw(Utility.Delivery, rawData);
 
-			// export raw data
-			await exporter.SaveAsJson(utility, accounts);
+			await exporter.SaveAsJson(accounts);
 
-			// export CSV data
-			exporter.SaveAsCsv(utility, accounts);
+			exporter.SaveAsCsv(accounts);
+
+			exporter.SaveConsumptionAsCsv(accounts);
+
+			Logger.Out($"Export folder: {exporter.ExportFolder.FullName}");
 		}
 
 		private static Options GetOptions(string[] args)
@@ -70,7 +65,7 @@ namespace acc104ua
 			return options;
 		}
 
-		private static async Task<IReadOnlyCollection<AccountDataRawDto>> GetRawData(Options options, Utility utility)
+		private static async Task<IReadOnlyCollection<AccountDataRawDto>> GetRawData(Options options)
 		{
 			// get auth cookies
 			var authCookies = await new AuthClient()
@@ -80,7 +75,6 @@ namespace acc104ua
 			// get data
 			var data = await new DataProvider(authCookies)
 				.GrabRaw(
-					utility,
 					new Dates(options.StartDate, options.EndDate));
 
 			return data;

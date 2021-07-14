@@ -16,7 +16,7 @@ namespace acc104ua
 			_authCookies = authCookie ?? throw new ArgumentNullException(nameof(authCookie));
 		}
 
-		public async Task<IReadOnlyCollection<AccountDataRawDto>> GrabRaw(Utility utility, Dates dates)
+		public async Task<IReadOnlyCollection<AccountDataRawDto>> GrabRaw(Dates dates)
 		{
 			// parse raw HTML
 			var accounts = await GetAccounts();
@@ -25,8 +25,11 @@ namespace acc104ua
 
 			foreach (var account in accounts)
 			{
-				var accountDataRawDto = await GetAccountDataRaw(utility, account, dates);
-				data.Add(accountDataRawDto);
+				var gasLines = await GetUtilityLines(Utility.Gas, account, dates);
+				var deliveryLines = await GetUtilityLines(Utility.Delivery, account, dates);
+				var consumption = await GetConsumption(account);
+
+				data.Add(new AccountDataRawDto(account.Id, gasLines, deliveryLines, consumption));
 			}
 
 			return data;
@@ -64,7 +67,7 @@ namespace acc104ua
 			return accounts;
 		}
 
-		private async Task<AccountDataRawDto> GetAccountDataRaw(Utility utility, AccountInfo account, Dates dates)
+		private async Task<IReadOnlyCollection<string>> GetUtilityLines(Utility utility, AccountInfo account, Dates dates)
 		{
 			// needs extra call
 			var pages = await GetNumberOfPages(utility, account, dates);
@@ -76,7 +79,7 @@ namespace acc104ua
 				htmls.Add(content);
 			}
 
-			return new AccountDataRawDto(account.Id, htmls);
+			return htmls;
 		}
 
 		private async Task<int> GetNumberOfPages(Utility utility, AccountInfo account, Dates dates)
@@ -118,6 +121,19 @@ namespace acc104ua
 				.ReceiveJson();
 
 			return content.data.html;
+		}
+
+		private async Task<MonthlyConsumptionDto> GetConsumption(AccountInfo account)
+		{
+			var data = await new Url("https://ok.104.ua/ua/ajx/individual/main/gasConsumptionMonthly")
+				.WithCookie(AuthCookie.Key, _authCookies.Value)
+				.PostUrlEncodedAsync(new
+				{
+					account_no = account.Id
+				})
+				.ReceiveJson<MonthlyConsumptionDto>();
+
+			return data;
 		}
 	}
 }

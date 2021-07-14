@@ -20,9 +20,34 @@ namespace acc104ua
 
 			foreach (var rawDataItem in rawData)
 			{
+				var gasLines = GetLines(rawDataItem.GasLines);
+				var deliveryLines = GetLines(rawDataItem.DeliveryLines);
+
+				var consumption = new List<MonthlyConsumption>();
+				for (var i = 0; i < rawDataItem.Consumption.data.periods.Length; ++i)
+				{
+					consumption.Add(new MonthlyConsumption(
+						rawDataItem.Consumption.data.volumes[i],
+						rawDataItem.Consumption.data.power[i],
+						rawDataItem.Consumption.data.periods[i]
+					));
+				}
+
+				accounts.Add(
+					new AccountData(
+						rawDataItem.AccountId,
+						gasLines.OrderBy(l => l.Month).ToList(),
+						deliveryLines.OrderBy(l => l.Month).ToList(),
+						consumption));
+			}
+
+			return accounts;
+
+			static List<MonthlyLine> GetLines(IReadOnlyCollection<string> lines)
+			{
 				var monthlyLines = new List<MonthlyLine>();
 
-				foreach (var line in rawDataItem.Lines)
+				foreach (var line in lines)
 				{
 					var doc = new HtmlAgilityPack.HtmlDocument();
 					doc.LoadHtml(line);
@@ -53,13 +78,8 @@ namespace acc104ua
 					}
 				}
 
-				accounts.Add(
-					new AccountData(
-						rawDataItem.AccountId, 
-						monthlyLines.OrderBy(l => l.Month).ToList()));
+				return monthlyLines;
 			}
-
-			return accounts;
 		}
 	}
 }

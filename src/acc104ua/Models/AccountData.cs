@@ -6,6 +6,8 @@ namespace acc104ua
 	internal sealed record AccountData
 	(
 		string AccountId,
-		IReadOnlyCollection<MonthlyLine> Lines
+		IReadOnlyCollection<MonthlyLine> GasLines,
+		IReadOnlyCollection<MonthlyLine> DeliveryLines,
+		IReadOnlyCollection<MonthlyConsumption> Consumption
 	);
 }
