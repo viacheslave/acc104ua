@@ -33,5 +33,5 @@ NOTES:
 ## Output
 
 1. Raw data. TXT files of what APIs give back.
-1. JSON. JSON files of cleaned-up data.
-2. CSVs. Data grouped by account ID and utility type.
+2. JSON. JSON files of cleaned-up data.
+3. CSVs. Data grouped by account ID and utility type.
